@@ -1,6 +1,6 @@
 ﻿namespace FooBar.Core
 {
-    public class FooBarConverter
+    public class CsvToDictionaryConverter
     {
         public Dictionary<string, string[]> Convert(string data, string delimiter)
         {
