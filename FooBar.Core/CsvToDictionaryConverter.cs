@@ -2,48 +2,71 @@
 {
     public class CsvToDictionaryConverter
     {
-        public Dictionary<string, string[]> Convert(string data, string delimiter)
+        public Dictionary<string, string[]> Convert(string csvContent, string delimiter)
         {
-            string[] array = new string[0];
+            string[] records = CreateRecords(csvContent);
+            records = FilterEmptyRecords(records);
 
-            if (data.Contains("\r\n"))
+            var headerColumns = GetHeaderColumns(records, delimiter);
+            var valueRecords = GetValueRecords(records);
+
+            return CreateRecordDictionary(headerColumns, valueRecords, delimiter);
+        }
+
+        private string[] CreateRecords(string csvContent)
+        {
+            if (csvContent.Contains("\r\n"))
             {
-                array = data.Split("\r\n");
+                return csvContent.Split("\r\n");
             }
-            else if (data.Contains("\r"))
+
+            if (csvContent.Contains("\r"))
             {
-                array = data.Split("\r");
-            }
-            else if (data.Contains("\n"))
-            {
-                array = data.Split("\n");
+                return csvContent.Split("\r");
             }
 
-            array = array.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-
-            var keyNames = array[0].Split(delimiter);
-            var dataArray = array[1..];
-
-            var result = new Dictionary<string, string[]>();
-
-            for (int i = 0; i < dataArray.Length; i++)
+            if (csvContent.Contains("\n"))
             {
-                var d = dataArray[i];
-                string[] entries = d.Split(delimiter);
-                for (int idx = 0; idx < keyNames.Length; idx++)
+                return csvContent.Split("\n");
+            }
+
+            return Array.Empty<string>();
+        }
+
+        private string[] FilterEmptyRecords(string[] lines)
+        {
+            return lines.Where(line => line is { Length: > 0 }).ToArray();
+        }
+
+        private string[] GetHeaderColumns(string[] lines, string delimiter)
+        {
+            return lines.First().Split(delimiter);
+        }
+
+        private string[] GetValueRecords(string[] records)
+        {
+            return records[1..];
+        }
+
+        private Dictionary<string, string[]> CreateRecordDictionary(string[] headerColumns, string[] valueRecords, string delimiter)
+        {
+            var recordDictionary = headerColumns.ToDictionary(header => header, _ => new string[valueRecords.Length]);
+
+            for (int valueRecordIndex = 0; valueRecordIndex < valueRecords.Length; valueRecordIndex++)
+            {
+                string? valueRecord = valueRecords[valueRecordIndex];
+                string[] values = valueRecord.Split(delimiter);
+
+                for (int headerColumnsIndex = 0; headerColumnsIndex < headerColumns.Length; headerColumnsIndex++)
                 {
-                    if (!result.ContainsKey(keyNames[idx]))
-                    {
-                        result.Add(keyNames[idx], new string[] { entries[idx] });
-                    }
-                    else
-                    {
-                        result[keyNames[idx]] = result[keyNames[idx]].Concat(new string[] { entries[idx] }).ToArray();
-                    }
+                    var currentHeader = headerColumns[headerColumnsIndex];
+                    var currentValue = values[headerColumnsIndex];
+
+                    recordDictionary[currentHeader][valueRecordIndex] = currentValue;
                 }
             }
 
-            return result;
+            return recordDictionary;
         }
 
         public string ConvertBack(Dictionary<string, string[]> data, string delimiter)
