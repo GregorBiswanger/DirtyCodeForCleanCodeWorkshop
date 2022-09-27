@@ -71,7 +71,7 @@
 
                 foreach (var line in data)
                 {
-                    if(lineStr.Length == 0)
+                    if (lineStr.Length == 0)
                     {
                         lineStr += line.Value[i];
                     }
